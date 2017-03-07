@@ -1,0 +1,67 @@
+#######################################
+# Syntax Coloring Map For RTL_Motors
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+IDCMotor	KEYWORD1
+IStepperMotor	KEYWORD1
+IMotorController	KEYWORD1
+DCMotorController	KEYWORD1
+StepperMotorController	KEYWORD1
+MotorDirection	KEYWORD1
+MotorMode	KEYWORD1
+MovementController	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+Run	KEYWORD2
+RunToPosition	KEYWORD2
+Stop	KEYWORD2
+StopFast	KEYWORD2
+Release	KEYWORD2
+Speed	KEYWORD3
+TargetSpeed KEYWORD3
+Position	KEYWORD3
+TargetPosition	KEYWORD3
+Acceleration	KEYWORD3
+Direction	KEYWORD3
+StepsPerMotorRev	KEYWORD3
+StepsPerRev	KEYWORD3
+Mode	KEYWORD3
+IsRunning	KEYWORD3
+IsRunningToPosition	KEYWORD3
+IsAtTargetSpeed KEYWORD3
+IsAtTargetPosition KEYWORD3
+
+Move	KEYWORD2
+Accelerate	KEYWORD2
+Go	KEYWORD2
+GoForward	KEYWORD2
+Reverse	KEYWORD2
+Turn	KEYWORD2
+TurnLeft	KEYWORD2
+TurnRight	KEYWORD2
+SpinLeft	KEYWORD2
+SpinRight	KEYWORD2
+IsForward	KEYWORD3
+IsBackward	KEYWORD3
+IsStopped	KEYWORD3
+WheelDiameter	KEYWORD3
+AxleWidth	KEYWORD3
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+MIN_STEP_SIZE	LITERAL1 
+SINGLE	LITERAL1 
+DOUBLE	LITERAL1 
+INTERLEAVE	LITERAL1 
+MICROSTEP	LITERAL1 
+FORWARD	LITERAL1 
+BACKWARD	LITERAL1 
+BRAKE	LITERAL1 
+RELEASE	LITERAL1 
+STOPPED	LITERAL1 
