@@ -1,31 +1,30 @@
-#define DEBUG 1
+#define DEBUG 0
 
 #include <Arduino.h>
 #include <Debug.h>
-#include <Common.h>
+#include <RTL_Stdlib.h>
 #include "MovementController.h"
 
 
-
 static DebugHelper Debug("MovementController");
-
-EVENT_ID MovementController::StartEvent     = EventSource::GenerateEventID();
-EVENT_ID MovementController::StopEvent      = EventSource::GenerateEventID();
-EVENT_ID MovementController::TurnBeginEvent = EventSource::GenerateEventID();
-EVENT_ID MovementController::TurnEndEvent   = EventSource::GenerateEventID();
 
 
 MovementController::MovementController(IMotorController& leftController, IMotorController& rightController)
 : _leftMotor(leftController), _rightMotor(rightController)
 {
-    _heading = 0;
     _stepsToTurn = 0;
-    _stepStart = 0;
-    _xWaypoint = 0;
-    _yWaypoint = 0;
-    _dx = 0;
-    _dy = 0;
-    SetWaypoint();    // Set initial starting waypoint
+    _wheelCircumference = 0;
+    _leftStepResolution = 0;
+    _rightStepResolution = 0;
+}
+
+
+void  MovementController::WheelDiameter(float value) 
+{ 
+    _wheelDiameter = value; 
+    _wheelCircumference = PI * _wheelDiameter;
+    _leftStepResolution = _wheelCircumference / _leftMotor.StepsPerRev();
+    _rightStepResolution = _wheelCircumference / _rightMotor.StepsPerRev();
 }
 
 
@@ -41,11 +40,9 @@ void MovementController::Poll()
 
         Debug.Log("%s, stepsToGo=%l", __func__, stepsToGo);
         
-        if (stepsToGo <= 0)
+        if (stepsToGo <= 0) // Done turning
         {
-            // Done turning
-            SetWaypoint();    // Set a waypoint whenever we complete a turn
-            TurnComplete();
+            NotifyTurnComplete();
         }
     }
 
@@ -57,20 +54,19 @@ void MovementController::Poll()
 
         if (isMovingNow)      // Just started moving, so post START event
         {
-            DispatchEvent(StartEvent);
+            DispatchEvent(START_EVENT);
         }
         else                  // Just stopped moving, so post the STOP event
         {
-            TurnComplete();   // Can't be turning anymore if we are stopped
-            SetWaypoint();    // Set a waypoint whenever we stop
-            DispatchEvent(StopEvent);
+            NotifyTurnComplete();   // Can't be turning anymore if we are stopped
+            DispatchEvent(STOP_EVENT);
         }
     }
     
-    // If moving and not turning then update position
-    if (IsMoving() && !IsTurning())
+    // If not turning then send a notification that we have moved in a straight line
+    if (!IsTurning())
     {
-        UpdatePosition();
+        NotifyLinearMove();
     }
 }
 
@@ -161,32 +157,24 @@ void MovementController::Accelerate(int deltaSpeed)
     2) The distance between the wheels (aka axle width)
     3) The steps per revolution of the motor
 
- NOTE: If the spin angle is less than what can be measured (as determined by the
-       motor step resolution), or the calculated rotation steps for either motor 
-       is zero, then no spin is performed.
+ NOTE: If abs(angle) is less than 2 degrees, or if the spin steps are zero for
+       either motor, then no spin is performed.
 
- NOTE: Spinning stops both motors before beginning the spin, and leaves the
-       motors stopped when the spin completes.
+ NOTE: Both motors are stopped before beginning the spin and when the spin completes.
 ******************************************************************************/
 void MovementController::Spin(float angle)
 {
     Debug.Log("%s(%f)", __func__, angle);
 
-//    // if the angle is 0 or close to 0 drive forward
-//    if (-2 < angle && angle < 2) return;
-
-    // Calculate the minimum angle that can be measure for a spin
-    float minAngle = 360.0 / min(_leftMotor.StepsPerRev(), _rightMotor.StepsPerRev());
-    
-    // If the spin angle is less than what can be measured then bail out
-    if (abs(angle) < minAngle) return;
+    // if the angle is 0 or close to 0 then ignore
+    if (-2 < angle && angle < 2) return;
     
     StopFast(); // Always start a spin from a stop
 
     int  turnSpeed  = 60;                               // Spin speed. Could be RPM or raw throttle setting, but 60 is a good comprimise for both
     float r    = _axleWidth / 2;                        // Spin radius. When spinning, the radius is 1/2 the axle width
-    float d    = r * (abs(angle) * PI / 180);           // Actual, physical distance a wheel must travel to cover the angle
-    float revs = d / (PI * _wheelDiameter);             // Number of revolutions to cover that distance
+    float d    = r * radians(abs(angle));               // Actual, physical distance a wheel must travel to cover the angle
+    float revs = d / _wheelCircumference;               // Number of revolutions to cover that distance
     long leftSteps  = revs * _leftMotor.StepsPerRev();  // Number of steps required for left wheel
     long rightSteps = revs * _rightMotor.StepsPerRev(); // Number of steps required for right wheel
 
@@ -195,6 +183,10 @@ void MovementController::Spin(float angle)
     // Bail out if the calculation for either motor returned 0 steps
     if (leftSteps == 0 || rightSteps == 0) return;
 
+    // Send a linear move notification before starting the spin
+    NotifyLinearMove();
+
+    _stepsToTurn = rightSteps;
     _leftMotor.Position(0);
     _rightMotor.Position(0);
     _leftMotor.RunToPosition(leftSteps);
@@ -211,11 +203,9 @@ void MovementController::Spin(float angle)
         _rightMotor.TargetSpeed(turnSpeed);
     }
     
-    // Go ahead and update the heading even before we start the spin since this
+    // Go ahead and post a turn event even before we start the spin since this
     // is the only time we have the information to do that.
-    // NOTE: we don't have to set the waypoint here since a spin always ends with 
-    //       a stop, and the Poll() methods sets the waypoint when a stop occurs.
-    _heading = fmod(_heading + angle, 360.0);
+    NotifyTurnMove(0, angle);
 }
 
 
@@ -233,8 +223,6 @@ void MovementController::Spin(float angle)
     2) The distance between the wheels (aka axle width)
     3) The steps per revolution of the motor
  
- The method CalculateTurnSteps() takes care of this.
-
  NOTE: If abs(angle) is less than 2 degrees then no turn is performed.
 ******************************************************************************/
 void MovementController::Turn(float angle)
@@ -244,53 +232,89 @@ void MovementController::Turn(float angle)
     // if the angle is 0 or close to 0 then ignore
     if (-2 < angle && angle < 2) return;
 
-    const float turnSpeedFactor = 2; 
+    const int   turnSpeedRatio = 2; 
+    const float turnSpeedFactor = turnSpeedRatio / (turnSpeedRatio - 1); 
+
+    // Send a linear move notification before starting the turn
+    NotifyLinearMove();
 
     // Determine which motor is inner and outer for turn
     IMotorController& innerMotor = (angle < 0) ? _rightMotor : _leftMotor;
     IMotorController& outerMotor = (angle < 0) ? _leftMotor : _rightMotor;
 
-    // Calculate steps to turn for the outer motor
-    _stepsToTurn = SIGN(angle)*CalculateTurnSteps(angle, outerMotor, turnSpeedFactor);
-
+    // Calculate the steps to turn for the outer motor
+    float turnRadius = turnSpeedFactor * _axleWidth; //(outerStepResolution * _stepsToTurn) / radians(angle); 
+    float arcLength  = turnRadius * radians(angle);
+    float rotations  = arcLength / _wheelCircumference;
+    
+    _stepsToTurn = rotations * outerMotor.StepsPerRev();
+//PrintLine("ANGLE=%f TW=%f WC=%f R=%f ARC=%f ROT=%f RES=%i STEPS=%i", angle, _axleWidth, _wheelCircumference, turnRadius, arcLength, rotations, outerMotor.StepsPerRev(), _stepsToTurn);
+    
     // The outer motor continues running at the current speed, but the inner motor 
     // is slowed to half-speed for the turn.
     outerMotor.TargetSpeed(_driveSpeed);
-    innerMotor.TargetSpeed(_driveSpeed/turnSpeedFactor);
+    innerMotor.TargetSpeed(_driveSpeed/turnSpeedRatio);
 
     // Reset outer motor step counter to 0 so we can count the turn steps.
     outerMotor.Position(0);
 
     // Go ahead and update the final position even before the turn starts since 
-    // this is the only time we have all the necessary information to do that.
-    UpdatePositionAfterTurn(angle, abs(_stepsToTurn), outerMotor);
-  
-//  if (angle < 0)
-//  {
-//    // Turning right so slow the right motor
-//    _stepsToTurn = -CalculateTurnSteps(angle, _leftMotor, turnSpeedFactor);
-//    _rightMotor.TargetSpeed(_driveSpeed/turnSpeedFactor);
-//    _leftMotor.TargetSpeed(_driveSpeed);
-//    _leftMotor.Position(0);
-//  }
-//  else
-//  {
-//    // Turning left so slow the left motor
-//    _stepsToTurn = CalculateTurnSteps(angle, _rightMotor, turnSpeedFactor);
-//    _leftMotor.TargetSpeed(_driveSpeed/turnSpeedFactor);
-//    _rightMotor.TargetSpeed(_driveSpeed);
-//    _rightMotor.Position(0);
-//  }
-  
+    // this is the only time we have all the necessary information to do that.    
+    NotifyTurnMove(turnRadius, angle); 
+    
     Debug.Log("%s(_stepsToTurn=%i)", __func__, _stepsToTurn);
-    DispatchEvent(TurnBeginEvent);
+    DispatchEvent(TURN_BEGIN_EVENT);
 }
 
 
-void MovementController::TurnComplete()
+//// Calculates the number of steps for a wheel to turn through an angle
+//long MovementController::CalculateTurnSteps(float angle, int stepsPerRev, float turnSpeedFactor)
+//{
+//    float w = turnSpeedFactor * abs(angle) / 360.0; // Angular speed
+//    float steps = 0.5 + (stepsPerRev * w * _axleWidth) / _wheelDiameter;
+//
+//    return (long)steps;
+//}
+
+
+void MovementController::NotifyTurnComplete()
 {
     _stepsToTurn = 0;
-    DispatchEvent(TurnEndEvent);
+    DispatchEvent(TURN_END_EVENT);
+
+    // Reset motor position counters
+    _leftMotor.Position(0);
+    _rightMotor.Position(0);
+}
+
+
+void MovementController::NotifyLinearMove()
+{
+    // This method should only be called when moving in a straight line. With
+    // that assumption, then the distance traversed by either motor whould be
+    // about the same. So it doesn't really matter which motor we choose to
+    // calculate distance moved.
+    long steps = abs(_leftMotor.Position()) * SIGN(_driveSpeed);
+    
+    if (steps == 0) return;
+    
+    float distance = steps * _leftStepResolution;
+
+    Debug.Log("%s - distance=%f", __func__, distance);
+    DispatchEvent(MOVED_EVENT, distance);
+
+    // Reset motor position counters
+    _leftMotor.Position(0);
+    _rightMotor.Position(0);
+}
+
+
+void MovementController::NotifyTurnMove(float turnRadius, float turnAngle)
+{
+    PolarVector2D turn(turnRadius, turnAngle);
+
+    Debug.Log("%s - radius=%f,angle=%f", __func__, turn.Radius, turn.Angle);
+    DispatchEvent(TURNED_EVENT, &turn);
 }
 
 
@@ -309,51 +333,21 @@ void MovementController::TurnComplete()
 //}
 
 
-// Calculates the number of steps for a wheel to turn through an angle
-long MovementController::CalculateTurnSteps(float angle, IMotorController& motor, float speedRatio)
-{
-    if (abs(speedRatio - 1) < 0.001) return 0;
-    
-    float WD  = _wheelDiameter;         // Wheel diameter
-    float TW  = _axleWidth;             // Track width
-    float SPR = motor.StepsPerRev();    // Steps per revolution of the motor
-    float factor = (speedRatio) / (speedRatio - 1);
-    float w   = factor * abs(angle) / 360;
-    float steps = 0.5 + (w * SPR * TW) / WD;
+//void MovementController::UpdatePositionAfterTurn(float turnAngle, long stepsToTurn, int stepsPerRev)
+//{
+//    float theta = radians(turnAngle);
+//    float turnRadius = (stepsToTurn * _wheelDiameter) / (theta * stepsPerRev()); 
+//    
+//    NotifyTurnMove(turnRadius, turnAngle);
+//}
 
-    return (long)steps;
-}
-
-
-void MovementController::UpdatePosition()
-{
-    long  steps = _leftMotor.Position() - _stepStart;
-    float s = steps * _wheelDiameter / _leftMotor.StepsPerRev();
-    float theta = radians(_heading);
-
-    _dx = s * sin(theta);
-    _dy = s * cos(theta);
-}
-
-
-void MovementController::UpdatePositionAfterTurn(float turnAngle, long stepsToTurn, IMotorController& motor)
-{
-    float theta = radians(turnAngle);
-    float r = (stepsToTurn * _wheelDiameter) / (theta * motor.StepsPerRev()); 
-    
-    _dx += r * sin(theta);
-    _dy += r * (1 - cos(theta));
-    _heading = fmod(_heading + turnAngle, 360.0);
-}
-
-
-void MovementController::SetWaypoint()
-{
-    _xWaypoint = Xpos();
-    _yWaypoint = Ypos();
-    _leftMotor.Position(0);
-    _rightMotor.Position(0);
-    _stepStart = 0;
-    
-    PrintLine("%s: xpos=%f, ypos=%f, heading=%f", __func__, Xpos(), Ypos(), _heading);
-}
+//void MovementController::SetWaypoint()
+//{
+//    _xWaypoint = Xpos();
+//    _yWaypoint = Ypos();
+//    _leftMotor.Position(0);
+//    _rightMotor.Position(0);
+//    _stepStart = 0;
+//    
+//    PrintLine("%s: xpos=%f, ypos=%f, heading=%f", __func__, Xpos(), Ypos(), _heading);
+//}

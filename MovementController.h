@@ -3,7 +3,7 @@
 
 #include <inttypes.h>
 #include <EventSource.h>
-#include "MotorController.h"
+#include "IMotorController.h"
 
 
 class MovementController : public EventSource
@@ -17,10 +17,12 @@ class MovementController : public EventSource
     public: const int SLOW_SPEED = 50;
     public: const int STOPPED = 0;
 
-    public: static EVENT_ID StartEvent;
-    public: static EVENT_ID StopEvent;
-    public: static EVENT_ID TurnBeginEvent;
-    public: static EVENT_ID TurnEndEvent;
+    public: static const EVENT_ID START_EVENT      = (EventSourceID::MovementController | EventCode::StartMotion);
+    public: static const EVENT_ID STOP_EVENT       = (EventSourceID::MovementController | EventCode::StopMotion);
+    public: static const EVENT_ID TURN_BEGIN_EVENT = (EventSourceID::MovementController | EventCode::TurnBegin);
+    public: static const EVENT_ID TURN_END_EVENT   = (EventSourceID::MovementController | EventCode::TurnEnd);
+    public: static const EVENT_ID MOVED_EVENT      = (EventSourceID::MovementController | EventCode::Moved);
+    public: static const EVENT_ID TURNED_EVENT     = (EventSourceID::MovementController | EventCode::Turned);
     
     //*************************************************************
     // Constructors
@@ -65,8 +67,8 @@ class MovementController : public EventSource
     public: float Acceleration() { return _leftMotor.Acceleration(); } // Both motors should always have the same acceleration
     public: void  Acceleration(float acceleration);
     
-    public: float WheelDiameter() { return _wheelDiameter; }
-    public: void  WheelDiameter(float value) { _wheelDiameter = value; }
+    public: float WheelDiameter() { return _wheelDiameter; };
+    public: void  WheelDiameter(float value); // { _wheelDiameter = value; };
     private: float _wheelDiameter = 0;
     
     public: float AxleWidth() { return _axleWidth; }
@@ -81,39 +83,29 @@ class MovementController : public EventSource
     
     public: bool IsBackward() { return _driveSpeed < 0; };
     
-    public: bool IsTurning() { return _stepsToTurn != 0; };
-
-    public: float Xpos() { return _xWaypoint + _dx; };
-
-    public: float Ypos() { return _yWaypoint + _dy; };
-    
+    public: bool IsTurning() { return (_stepsToTurn != 0); };    
 
     //*************************************************************
     // Internal methods
     //*************************************************************
-    private: void TurnComplete();
+    private: void NotifyTurnComplete();
     
-    private: void UpdatePosition();
-    
-    private: void UpdatePositionAfterTurn(float turnAngle, long stepsToTurn, IMotorController& motor);
+    private: void NotifyLinearMove();
 
-    private: void SetWaypoint();
-    
-    private: long CalculateTurnSteps(float angle, IMotorController& motor, float speedRatio=1);
+    private: void NotifyTurnMove(float turnRadius, float turnAngle);
+
+    //private: long CalculateTurnSteps(float angle, int stepsPerRev, float turnSpeedFactor=1);
     
     //*************************************************************
     // Private variables
     //*************************************************************
     private: IMotorController& _leftMotor;
     private: IMotorController& _rightMotor;
-    
-    private: float _heading;   // 0-360 degrees
+
+    private: float _wheelCircumference;
+    private: float _leftStepResolution;
+    private: float _rightStepResolution;    
     private: int   _stepsToTurn;
-    private: long  _stepStart; // Starting step count for last waypoint
-    private: float _xWaypoint; // Absolute X position in centimeters of last waypoint (relative to initial starting position)
-    private: float _yWaypoint; // Absolute Y position in centimeters of last waypoint (relative to initial starting position)
-    private: float _dx;        // X position in centimeters from last waypoint
-    private: float _dy;        // Y position in centimeters from last waypoint
  };
 
 #endif
