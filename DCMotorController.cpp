@@ -15,9 +15,6 @@
 static DebugHelper Debug("DCMotorController");
 
 
-EVENT_ID DCMotorController::DebugEvent = GenerateEventID();
-
-
 DCMotorController::DCMotorController(IDCMotor* pMotor, RotationSensor* pRotSensor)
 {
     _pMotor = pMotor;
@@ -189,7 +186,7 @@ void DCMotorController::UpdateThrottleWithFeedback()
     debugData.T0          = t0;
     debugData.T1          = t1;
     debugData.Throttle    = _throttle;    
-    DispatchEvent(DebugEvent, (void*)&debugData);    
+    DispatchEvent(DEBUG_EVENT, (void*)&debugData);    
 #endif
 }
 

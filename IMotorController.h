@@ -1,13 +1,14 @@
 /*******************************************************************************
- MotorController.h
+ IMotorController.h
  Defines the abstract interface for a motor controller
 *******************************************************************************/
 
-#ifndef MotorController_h
-#define MotorController_h
+#ifndef _IMotorController_h_
+#define _IMotorController_h_
 
 #include <inttypes.h>
-#include <Common.h>
+#include <RTL_Stdlib.h>
+#include <IPollable.h>
 
 
 // These defs cause trouble on some versions of Arduino

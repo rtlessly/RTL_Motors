@@ -1,5 +1,5 @@
 /*******************************************************************************
- MotorController.h
+ StepperMotorController.h
  Defines the abstract interface for a motor controller
 *******************************************************************************/
 
@@ -10,7 +10,7 @@
 #include <Common.h>
 #include <IPollable.h>
 #include "IStepperMotor.h"
-#include "MotorController.h"
+#include "IMotorController.h"
 
 
 // These defs cause trouble on some versions of Arduino

@@ -1,10 +1,5 @@
-/*******************************************************************************
- MotorController.h
- Defines the abstract interface for a motor controller
-*******************************************************************************/
-
-#ifndef DCMotorController_h
-#define DCMotorController_h
+#ifndef _DCMotorController_h_
+#define _DCMotorController_h_
 
 #include <inttypes.h>
 #include <Common.h>
@@ -31,7 +26,7 @@
 //******************************************************************************
 class DCMotorController : public IMotorController, public EventSource
 {
-    public: static EVENT_ID DebugEvent;
+    public: static const EVENT_ID DEBUG_EVENT = (EventSourceID::DCMotorController | EventCode::DebugInfo);
     
     //**************************************************************************
     /// Constructor.

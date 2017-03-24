@@ -3,8 +3,8 @@
  Defines the abstract interface for a stepper motor object
 *******************************************************************************/
 
-#ifndef IStepperMotor_h
-#define IStepperMotor_h
+#ifndef _IStepperMotor_h_
+#define _IStepperMotor_h_
 
 #include <inttypes.h>
 

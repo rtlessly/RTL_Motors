@@ -3,8 +3,8 @@
  Defines the abstract interface for a DC motor object
 *******************************************************************************/
 
-#ifndef IDCMotor_h
-#define IDCMotor_h
+#ifndef _IDCMotor_h_
+#define _IDCMotor_h_
 
 #include <inttypes.h>
 
