@@ -2,8 +2,9 @@
 #define _DCMotorController_h_
 
 #include <inttypes.h>
-#include <Common.h>
-#include <EventSource.h>
+#include <RTL_Stdlib.h>
+#include <RTL_Math.h>
+#include <RTL_EventFramework.h>
 #include <RotationSensor.h>
 #include "IDCMotor.h"
 #include "IMotorController.h"
@@ -36,7 +37,7 @@ class DCMotorController : public IMotorController, public EventSource
     //==========================================================================
     // IPollable Methods
     //==========================================================================
-    void Poll();
+    public: void Poll();
 
     //==========================================================================
     // IMotorController Methods
@@ -88,13 +89,13 @@ class DCMotorController : public IMotorController, public EventSource
     /// Checks to see if the motor is currently running
     /// \return true if the current speed is not zero
     //**************************************************************************
-    public: bool IsRunning() { return (_currentSpeed != 0.0 || _isRunningToPosition); };
+    public: inline bool IsRunning() { return (_currentSpeed != 0.0 || _isRunningToPosition); };
 
     //**************************************************************************
     /// Checks to see if the motor is currently running to a position
     /// \return true if the motor is running to a position
     //**************************************************************************
-    public: bool IsRunningToPosition() { return (_isRunningToPosition); };
+    public: inline bool IsRunningToPosition() { return _isRunningToPosition; };
 
     //**************************************************************************
     /// Checks to see if the motor is running at the target speed
@@ -108,19 +109,19 @@ class DCMotorController : public IMotorController, public EventSource
     /// Checks to see if the motor is at the target position
     /// \return true if the motor is at the target position
     //**************************************************************************
-    public: bool IsAtTargetPosition() { return (_currentPos >= _targetPos); };
+    public: inline bool IsAtTargetPosition() { return (_currentPos >= _targetPos); };
 
     //**************************************************************************
     /// Gets the current direction the motor is turning.
     /// \return +1 = FORWARD, -1 = BACKWARD, 0 = STOPPED
     //**************************************************************************
-    public: int8_t Direction() { return _direction; };
+    public: inline int8_t Direction() { return SIGN(_throttle); };
 
     //**************************************************************************
     /// Gets or sets the number of sensors pulses per motor revolution.
     /// If the motor does not have a rotation sensor then 1 is returned.
     //**************************************************************************
-    public: uint16_t StepsPerRev() { return _pRotSensor == NULL ? 1 : _pRotSensor->Resolution(); };
+    public: inline uint16_t StepsPerRev() { return _pRotSensor == NULL ? 1 : _pRotSensor->Resolution(); };
 
     //**************************************************************************
     /// Gets or sets the current motor speed. Positive speeds are FORWARD, negative
@@ -130,8 +131,8 @@ class DCMotorController : public IMotorController, public EventSource
     /// \param[in] value The desired motor speed.
     /// \return The motor speed.
     //**************************************************************************
-    public: float Speed() { return _currentSpeed; };
-    public: void  Speed(float value) { _targetSpeed = value; };
+    public: inline float Speed() { return _currentSpeed; };
+    public: inline void  Speed(float value) { _targetSpeed = value; };
 
     //**************************************************************************
     /// Gets or sets the target motor speed in RPM. The Run() function
@@ -143,8 +144,8 @@ class DCMotorController : public IMotorController, public EventSource
     /// If the motor has a rotation sensor then the speed is in RPM. Otherwise, 
     /// it is the raw motor speed value.
     //**************************************************************************
-    public: float TargetSpeed() { return _targetSpeed; };
-    public: void  TargetSpeed(float value) { _targetSpeed = (_pRotSensor != NULL) ? value : constrain(value, -255, 255); };
+    public: inline float TargetSpeed() { return _targetSpeed; };
+    public: inline void  TargetSpeed(float value) { _targetSpeed = (_pRotSensor != NULL) ? value : constrain(value, -255, 255); };
 
     //**************************************************************************
     /// Gets or sets the currently motor position. Position values are always considered 
@@ -161,8 +162,8 @@ class DCMotorController : public IMotorController, public EventSource
     ///       recommended implementation is to interpret the position as the 
     ///       number of milliseconds to run.
     //**************************************************************************
-    public: long Position() { return _currentPos; };
-    public: void Position(long value) { _targetPos = _currentPos = abs(value); };
+    public: inline long Position() { return _currentPos; };
+    public: inline void Position(long value) { _targetPos = _currentPos = abs(value); };
 
     //**************************************************************************
     /// Gets or sets the set target position. Position values are always considered 
@@ -176,8 +177,8 @@ class DCMotorController : public IMotorController, public EventSource
     ///       recommended implementation is to interpret the position as the 
     ///       number of milliseconds to run.
     //**************************************************************************
-    public: long TargetPosition() { return _targetPos; };
-    public: void TargetPosition(long value) { _targetPos = abs(value); };
+    public: inline long TargetPosition() { return _targetPos; };
+    public: inline void TargetPosition(long value) { _targetPos = abs(value); };
 
     //**************************************************************************
     /// Gets or sets the acceleration rate. Will always be a positive value.
@@ -189,8 +190,8 @@ class DCMotorController : public IMotorController, public EventSource
     /// Setting the acceleration to 0 causes acceleration to be ignored and
     /// motor speed changes happen as fast as the motor can make them.
     //**************************************************************************
-    public: float Acceleration() { return _acceleration; };
-    public: void  Acceleration(float value) { _acceleration = fabs(value); };
+    public: inline float Acceleration() { return _acceleration; };
+    public: inline void  Acceleration(float value) { _acceleration = fabs(value); };
 
     //==========================================================================
     // Internal implementation
@@ -216,6 +217,10 @@ class DCMotorController : public IMotorController, public EventSource
 
     private: void UpdateThrottleNoFeedback();
 
+    private: void SetBrake();
+
+    private: void ReleaseBrake();
+
     //**************************************************************************
     // Internal state
     //**************************************************************************
@@ -231,7 +236,7 @@ class DCMotorController : public IMotorController, public EventSource
     /// The target position.
     private: int32_t _targetPos;
 
-    /// The last computed speed value
+    /// The last computed speed value. Positive=FORWARD, negative=BACKWARD.
     private: int16_t _currentSpeed;
 
     /// The target speed. Positive=FORWARD, negative=BACKWARD.
@@ -248,17 +253,16 @@ class DCMotorController : public IMotorController, public EventSource
     private: uint32_t _lastPositionCount;
     private: uint32_t _intervalStartTime;
     
-    /// The current motor throttle setting in raw motor speed units (0-255)
+    /// The current motor throttle setting in raw motor speed units (-255 to +255)
     private: int16_t _throttle;
-
-    /// The current motor direction
-    private: int8_t _direction;
 
     /// Indicates if we are running to a position.
     private: bool _isRunningToPosition;
 
-    
-    public: typedef struct DebugControlData_struct
+    /// Counts the number of polling cycles to hold a brake.
+    private: uint8_t _brakeCount;
+
+    public: struct DebugControlData
     {
         uint8_t MotorID;
         int16_t TargetSpeed;
@@ -271,8 +275,7 @@ class DCMotorController : public IMotorController, public EventSource
         float   Pterm;
         float   Iterm;
         float   Dterm;
-    }
-    DebugControlData;
+    };
 };
 
 #endif

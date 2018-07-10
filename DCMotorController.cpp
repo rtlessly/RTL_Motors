@@ -1,6 +1,6 @@
 /*******************************************************************************
  DCMotorController.cpp
- High-level, hardware-independent DC motor contorller
+ High-level, hardware-independent DC motor controller
 *******************************************************************************/
 
 #define DEBUG 0
@@ -8,7 +8,6 @@
 
 #include <Arduino.h>
 #include <RTL_Debug.h>
-#include <EventDispatcher.h>
 #include "DCMotorController.h"
 
 
@@ -25,19 +24,16 @@ DCMotorController::DCMotorController(IDCMotor* pMotor, RotationSensor* pRotSenso
     _currentPos = 0;
     _targetPos = 0;
     _throttle = 0;
-    _direction = STOPPED;
     _acceleration = 1000;
     _isRunningToPosition = false;
+    _brakeCount = 0;
     _intervalStartTime = 0;
 
-    // variables for tracking the roation sensor
+    // variables for tracking the rotation sensor
     _lastSampleCount = 0;
     _lastSampleTime = 0;
     _lastPositionCount = 0;
     _prevError = 0;
-    
-    // Allows the Poll() method to be automatically called
-    EventDispatcher::Add(*this);
 }
 
 
@@ -46,6 +42,8 @@ static const long pollingInterval = 200;
 
 void DCMotorController::Poll()
 {
+    Debug.Log(this) << __func__ << endl; 
+
     UpdatePosition();    
 
     if (_isRunningToPosition)
@@ -58,7 +56,7 @@ void DCMotorController::Poll()
 
     if (_intervalStartTime == 0)
     {
-        Debug.Log("[%i].%s Initializing rotation sensor", _pMotor->ID(), __func__);
+        Debug.Log(this) << __func__ << "[" << _pMotor->ID() <<  F("] Initializing rotation sensor") << endl;
 
         if (_pRotSensor != NULL) _pRotSensor->Enable();
 
@@ -66,7 +64,15 @@ void DCMotorController::Poll()
     }
     else if ((now - _intervalStartTime) >= pollingInterval) 
     {
-        Debug.Log("[%i].%s _intervalStartTime=%l, now=%l", _pMotor->ID(), __func__, _intervalStartTime, now);
+        Debug.Log(this) << __func__ << "[" << _pMotor->ID() <<  F("] _intervalStartTime=") << _intervalStartTime <<  F(", now=") << now << endl;
+        
+        if (_brakeCount > 0)
+        {
+            if (--_brakeCount > 0) return;
+            
+            ReleaseBrake();
+        }   
+
         Run();
         _intervalStartTime = now;
     }
@@ -81,7 +87,7 @@ void DCMotorController::Poll()
 
 void DCMotorController::RunToPosition(long targetPosition)
 {
-    Debug.Log("[%i].%s(%l)", _pMotor->ID(), __func__, targetPosition);
+    Debug.Log(this) << __func__ << "[" << _pMotor->ID() <<  F("] targetPosition=") << targetPosition << endl;
     TargetPosition(targetPosition);
     _isRunningToPosition = true;
 }
@@ -103,8 +109,8 @@ void DCMotorController::RunToPosition(long targetPosition)
 //******************************************************************************
 bool DCMotorController::Run()
 {
-    Debug.Log("[%i].%s", _pMotor->ID(), __func__);
-    
+    Debug.Log(this) << __func__ << "[" << _pMotor->ID() << "]" << endl;
+
     if (_pRotSensor != NULL) 
         UpdateThrottleWithFeedback();
     else
@@ -129,9 +135,10 @@ void DCMotorController::UpdateThrottleWithFeedback()
     uint32_t count    = data.Count - _lastSampleCount;            // Sensor counts since last reading
     uint32_t endTime  = (count > 0) ? data.LastCountTime : now;   // End time for current reading
     uint32_t interval = endTime - _lastSampleTime;                // Time interval for current reading
-
+    uint8_t  direction = Direction();
+    
     //_currentPos  += count;
-    _currentSpeed = ((count * 60000000L) / (interval * data.CountsPerRev)) * _direction;
+    _currentSpeed = ((count * 60000000L) / (interval * data.CountsPerRev)) * direction;
 
     // Calculate input variables
     int Ra = _currentSpeed;                        // Actual RPM
@@ -171,7 +178,18 @@ void DCMotorController::UpdateThrottleWithFeedback()
     // Set new throttle setting
     SetThrottle(t1);
 
-    Debug.Log("[%i].%s,%i,%i,%i,%i,%f,%f,%f,%i,%i,%i", _pMotor->ID(), __func__, _targetSpeed, Rt, Ra, e, pterm, iterm, dterm, t0, t1, _throttle);
+    Debug.Log(this) << __func__ << "[" << _pMotor->ID() 
+                                <<  F("] _targetSpeed=") << _targetSpeed 
+                                <<  F(", Rt=") << Rt  
+                                <<  F(", Ra=") << Ra  
+                                <<  F(", e=") << e  
+                                <<  F(", pterm=") << pterm  
+                                <<  F(", iterm=") << iterm  
+                                <<  F(", dterm=") << dterm  
+                                <<  F(", t0=") << t0  
+                                <<  F(", t1=") << t1  
+                                <<  F(", _throttle=") << _throttle  
+                                << endl;
 
 #if DEBUG_FEEDBACK 
     DebugControlData debugData;
@@ -186,7 +204,7 @@ void DCMotorController::UpdateThrottleWithFeedback()
     debugData.T0          = t0;
     debugData.T1          = t1;
     debugData.Throttle    = _throttle;    
-    DispatchEvent(DEBUG_EVENT, (void*)&debugData);    
+    QueueEvent(PROXIMITY_EVENT, (void*)&debugData);    
 #endif
 }
 
@@ -199,7 +217,7 @@ void DCMotorController::UpdateThrottleWithFeedback()
 //******************************************************************************
 void DCMotorController::UpdateThrottleNoFeedback()
 {
-    if (_throttle == _targetPos) return _throttle;
+    if (_throttle == _targetPos) return;
     
     uint32_t now = millis();
     
@@ -235,30 +253,49 @@ void DCMotorController::UpdateThrottleNoFeedback()
 //******************************************************************************
 void DCMotorController::SetThrottle(const int16_t value)
 {
-  Debug.Log("[%i].%s %i", _pMotor->ID(), __func__, value);
-  
-  int t1 = constrain(value, -255, 255);   // Constrain to allowed throttle values 
-  
-  // If already at this throttle setting then nothing to do, so exit
-  if (_throttle == t1) return;
-  
-  _throttle = t1;
-  _direction = SIGN(_throttle);
-  
-  // If we don't have a rotation sensor then set the current speed to the throttle setting
-  if (_pRotSensor == NULL) _currentSpeed = t1;
+    Debug.Log(this) << __func__ << "[" << _pMotor->ID() <<  "] value=" << value  << endl;
 
-  Debug.Log("[%i].%s throttle=%i, dir=%i", _pMotor->ID(), __func__, _throttle, _direction);
-  
-  _pMotor->Speed(abs(_throttle));
-  _pMotor->Run((_direction > 0) ? DCMotorMode::FORWARD  : 
-               (_direction < 0) ? DCMotorMode::BACKWARD :
-                                  DCMotorMode::RELEASE);
+    // Constrain to allowed throttle values   
+    int t1 = constrain(value, -255, 255); 
+
+    // Reset the brake count to discontinue any braking in progress
+    _brakeCount = 0;
+
+    // If already at this throttle setting then nothing to do, so exit
+    if (_throttle == t1) return;
+
+    _throttle = t1;
+    
+    uint8_t direction = SIGN(_throttle);
+
+    // If we don't have a rotation sensor then set the current speed to the throttle setting
+    if (_pRotSensor == NULL) _currentSpeed = t1;
+
+    Debug.Log(this) << __func__ << "[" << _pMotor->ID() <<  F("] throttle=") << _throttle <<  F(", direction=") << direction  << endl;
+
+    _pMotor->Speed(abs(_throttle));
+    _pMotor->Run((direction > 0) ? DCMotorMode::FORWARD  : 
+                 (direction < 0) ? DCMotorMode::BACKWARD :
+                                   DCMotorMode::RELEASE);
+}
+
+
+void DCMotorController::SetBrake()
+{
+    _pMotor->Run(DCMotorMode::BRAKE);
+    _brakeCount = 4;   // Hold brake for 4 polling intervals (about 0.6 - 0.8 sec)
+}
+
+
+void DCMotorController::ReleaseBrake()
+{
+    _pMotor->Run(DCMotorMode::RELEASE);
+    _brakeCount = 0;
 }
 
 
 /******************************************************************************
- Updates the motor position. The motor position is culmulative number of steps
+ Updates the motor position. The motor position is cumulative number of steps
  the motor has turned (regardless of direction) since the last reset.
  This is always a positive number.
 ******************************************************************************/
@@ -287,16 +324,17 @@ void DCMotorController::UpdatePosition()
 
 void DCMotorController::Stop()
 {
-    Debug.Log("[%i].%s", _pMotor->ID(), __func__);
+    Debug.Log(this) << __func__ << "[" << _pMotor->ID() <<  "]" << endl;
     TargetSpeed(0);
 }
 
 
 void DCMotorController::StopFast()
 {
-    //Debug.Log("[%i].%s", _pMotor->ID(), __func__);
+    Debug.Log(this) << __func__ << "[" << _pMotor->ID() <<  "]" << endl;
     TargetSpeed(0);
     SetThrottle(0);
+    SetBrake();
     _isRunningToPosition = false;
 }
 

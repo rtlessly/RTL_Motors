@@ -11,11 +11,11 @@ class MovementController : public EventSource
     //*************************************************************
     // Constants
     //*************************************************************
-    public: const int MAX_SPEED = 1000;
-    public: const int FAST_SPEED = 600;
-    public: const int CRUISE_SPEED = 200;
-    public: const int SLOW_SPEED = 50;
-    public: const int STOPPED = 0;
+    public: static const int MAX_SPEED = 1000;
+    public: static const int FAST_SPEED = 600;
+    public: static const int CRUISE_SPEED = 200;
+    public: static const int SLOW_SPEED = 50;
+    public: static const int STOPPED = 0;
 
     public: static const EVENT_ID START_EVENT      = (EventSourceID::MovementController | EventCode::StartMotion);
     public: static const EVENT_ID STOP_EVENT       = (EventSourceID::MovementController | EventCode::StopMotion);

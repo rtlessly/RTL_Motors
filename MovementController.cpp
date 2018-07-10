@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <Debug.h>
 #include <RTL_Stdlib.h>
+#include <RTL_Math.h>
 #include "MovementController.h"
 
 
@@ -30,16 +31,19 @@ void  MovementController::WheelDiameter(float value)
 
 void MovementController::Poll()
 {
+    Debug.Log(this) << __func__ << endl;
+
     static bool isMoving = false;
     
     if (IsTurning())
     {
         IMotorController& motor = (_stepsToTurn > 0) ? _rightMotor : _leftMotor;
+
         long position = abs(motor.Position());
         long stepsToGo = (long)abs(_stepsToTurn) - position;
 
-        Debug.Log("%s, stepsToGo=%l", __func__, stepsToGo);
-        
+        Debug.Log(this) << __func__ << F(": stepsToGo=") << stepsToGo << endl;
+
         if (stepsToGo <= 0) // Done turning
         {
             NotifyTurnComplete();
@@ -54,12 +58,14 @@ void MovementController::Poll()
 
         if (isMovingNow)      // Just started moving, so post START event
         {
-            DispatchEvent(START_EVENT);
+            QueueEvent(START_EVENT);
+            //DispatchEvent(START_EVENT);
         }
         else                  // Just stopped moving, so post the STOP event
         {
             NotifyTurnComplete();   // Can't be turning anymore if we are stopped
-            DispatchEvent(STOP_EVENT);
+            QueueEvent(STOP_EVENT);
+            //DispatchEvent(STOP_EVENT);
         }
     }
     
@@ -73,7 +79,7 @@ void MovementController::Poll()
 
 void MovementController::Move(int newSpeed)
 {
-    Debug.Log("%s(%i)", __func__, newSpeed);
+    Debug.Log(this) << __func__ << F(": newSpeed=") << newSpeed << endl;
 
     _driveSpeed = constrain(newSpeed, -MAX_SPEED, MAX_SPEED);
     _leftMotor.TargetSpeed(_driveSpeed);
@@ -107,7 +113,7 @@ void MovementController::Reverse()
 
 void MovementController::Stop()
 {
-    Debug.Log(__func__);
+    Debug.Log(this) << __func__ << endl;
     _leftMotor.Stop();
     _rightMotor.Stop();
 }
@@ -115,7 +121,7 @@ void MovementController::Stop()
 
 void MovementController::StopFast()
 {
-    Debug.Log(__func__);
+    Debug.Log(this) << __func__ << endl;
     _leftMotor.StopFast();
     _rightMotor.StopFast();
 }
@@ -123,7 +129,7 @@ void MovementController::StopFast()
 
 void MovementController::Acceleration(float acceleration)
 {
-    Debug.Log("%s(%f)", __func__, acceleration);
+    Debug.Log(this) << __func__ << F(": acceleration=") << acceleration << endl;
 
     _leftMotor.Acceleration(acceleration);
     _rightMotor.Acceleration(acceleration);
@@ -132,7 +138,7 @@ void MovementController::Acceleration(float acceleration)
 
 void MovementController::Accelerate(int deltaSpeed)
 {
-    Debug.Log("%s(%i)", __func__, deltaSpeed);
+    Debug.Log(this) << __func__ << F(": deltaSpeed=") << deltaSpeed << endl;
 
     int newSpeed = _driveSpeed + deltaSpeed;
 
@@ -164,7 +170,7 @@ void MovementController::Accelerate(int deltaSpeed)
 ******************************************************************************/
 void MovementController::Spin(float angle)
 {
-    Debug.Log("%s(%f)", __func__, angle);
+    Debug.Log(this) << __func__ << F(": angle=") << angle << endl;
 
     // if the angle is 0 or close to 0 then ignore
     if (-2 < angle && angle < 2) return;
@@ -178,7 +184,14 @@ void MovementController::Spin(float angle)
     long leftSteps  = revs * _leftMotor.StepsPerRev();  // Number of steps required for left wheel
     long rightSteps = revs * _rightMotor.StepsPerRev(); // Number of steps required for right wheel
 
-    Debug.Log("%s: angle=%f, r=%f, d=%f, revs=%f, leftSteps=%l, rightSteps=%l, turnSpeed=%i", __func__, angle, r, d, revs, leftSteps, rightSteps, turnSpeed);
+    Debug.Log(this) << __func__ << F(": angle=") << angle 
+                                << F(", r=") << r
+                                << F(", d=") << d
+                                << F(", revs=") << revs
+                                << F(", leftSteps=") << leftSteps
+                                << F(", rightSteps=") << rightSteps
+                                << F(", turnSpeed=") << turnSpeed
+                                << endl;
 
     // Bail out if the calculation for either motor returned 0 steps
     if (leftSteps == 0 || rightSteps == 0) return;
@@ -227,7 +240,7 @@ void MovementController::Spin(float angle)
 ******************************************************************************/
 void MovementController::Turn(float angle)
 {
-    Debug.Log("%s(%f)", __func__, abs(angle));
+    Debug.Log(this) << __func__ << F(": angle=") << abs(angle) << endl;
 
     // if the angle is 0 or close to 0 then ignore
     if (-2 < angle && angle < 2) return;
@@ -248,7 +261,6 @@ void MovementController::Turn(float angle)
     float rotations  = arcLength / _wheelCircumference;
     
     _stepsToTurn = rotations * outerMotor.StepsPerRev();
-//PrintLine("ANGLE=%f TW=%f WC=%f R=%f ARC=%f ROT=%f RES=%i STEPS=%i", angle, _axleWidth, _wheelCircumference, turnRadius, arcLength, rotations, outerMotor.StepsPerRev(), _stepsToTurn);
     
     // The outer motor continues running at the current speed, but the inner motor 
     // is slowed to half-speed for the turn.
@@ -262,8 +274,9 @@ void MovementController::Turn(float angle)
     // this is the only time we have all the necessary information to do that.    
     NotifyTurnMove(turnRadius, angle); 
     
-    Debug.Log("%s(_stepsToTurn=%i)", __func__, _stepsToTurn);
-    DispatchEvent(TURN_BEGIN_EVENT);
+    Debug.Log(this) << __func__ << F(": TURN_BEGIN_EVENT _stepsToTurn=") << _stepsToTurn << endl;
+    QueueEvent(TURN_BEGIN_EVENT);
+    //DispatchEvent(TURN_BEGIN_EVENT);
 }
 
 
@@ -280,7 +293,8 @@ void MovementController::Turn(float angle)
 void MovementController::NotifyTurnComplete()
 {
     _stepsToTurn = 0;
-    DispatchEvent(TURN_END_EVENT);
+    QueueEvent(TURN_END_EVENT);
+    //DispatchEvent(TURN_END_EVENT);
 
     // Reset motor position counters
     _leftMotor.Position(0);
@@ -300,8 +314,9 @@ void MovementController::NotifyLinearMove()
     
     float distance = steps * _leftStepResolution;
 
-    Debug.Log("%s - distance=%f", __func__, distance);
-    DispatchEvent(MOVED_EVENT, distance);
+    Debug.Log(this) << __func__ << F(": MOVED_EVENT distance=") << distance << endl;
+    QueueEvent(MOVED_EVENT, distance);
+    //DispatchEvent(MOVED_EVENT, distance);
 
     // Reset motor position counters
     _leftMotor.Position(0);
@@ -313,8 +328,9 @@ void MovementController::NotifyTurnMove(float turnRadius, float turnAngle)
 {
     PolarVector2D turn(turnRadius, turnAngle);
 
-    Debug.Log("%s - radius=%f,angle=%f", __func__, turn.Radius, turn.Angle);
-    DispatchEvent(TURNED_EVENT, &turn);
+    Debug.Log(this) << __func__ << F(": TURNED_EVENT radius=") << turn.Radius << F(", angle=") << turn.Angle << endl;
+    QueueEvent(TURNED_EVENT, &turn);
+    //DispatchEvent(TURNED_EVENT, &turn);
 }
 
 

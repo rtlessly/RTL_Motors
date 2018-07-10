@@ -1,10 +1,10 @@
 /*******************************************************************************
- IStepperMotor.h
+ IStepperMotor2.h
  Defines the abstract interface for a stepper motor object
 *******************************************************************************/
 
-#ifndef _IStepperMotor_h_
-#define _IStepperMotor_h_
+#ifndef _IStepperMotor2_h_
+#define _IStepperMotor2_h_
 
 #include <inttypes.h>
 
@@ -14,10 +14,10 @@
 /// the basic operations that a stepper motor needs to perform to be controlled
 /// by the StepperMotorController class.
 //******************************************************************************
-class IStepperMotor 
+class IStepperMotor2 
 {
     /// The constructor is protected to enforce abstract base class semantics.
-    protected: IStepperMotor(void) { };
+    protected: IStepperMotor2(void) { };
 
     
     //**************************************************************************
@@ -81,7 +81,7 @@ class IStepperMotor
     //**************************************************************************
     /// Gets the motor ID (motor number). 
     //**************************************************************************
-    public: virtual uint16_t ID() = 0;
+    public: virtual uint8_t GetID() = 0;
   
     //**************************************************************************
     /// Gets the number of steps per one motor revolution. 
@@ -91,8 +91,8 @@ class IStepperMotor
     //**************************************************************************
     /// Gets or sets the motor mode.
     //**************************************************************************
-    public: virtual MotorMode Mode() = 0;
-    public: virtual void Mode(MotorMode mode) = 0;
+    public: virtual MotorMode GetMode() = 0;
+    public: virtual void SetMode(MotorMode mode) = 0;
 };
 
 #endif

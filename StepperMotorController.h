@@ -7,7 +7,6 @@
 #define StepperMotorController_h
 
 #include <inttypes.h>
-#include <Common.h>
 #include <IPollable.h>
 #include "IStepperMotor.h"
 #include "IMotorController.h"
@@ -84,8 +83,8 @@ class StepperMotorController : public IPollable
     // IPollable Methods
     //==========================================================================
 
-    void Poll();
-    
+    public: void Poll();
+
     //==========================================================================
     // Methods
     //==========================================================================

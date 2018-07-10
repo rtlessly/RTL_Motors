@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <Debug.h>
+#include <RTL_Math.h>
 #include "StepperMotorController.h"
 
 
@@ -21,7 +22,7 @@ StepperMotorController::StepperMotorController(IStepperMotor* pMotor)
     // Keeps track of motor speed
     _currentSpeed = 0.0;
     _targetSpeed = 0;
-    
+
     // Keeps track of the step time intervals
     _currentStepSize = 0;
     _targetStepSize = 0.0;
@@ -48,6 +49,7 @@ StepperMotorController::StepperMotorController(IStepperMotor* pMotor)
 
 void StepperMotorController::Poll()
 {
+    Debug.Log(this) << __func__ << endl;
     Run();
 }
 
@@ -60,7 +62,7 @@ void StepperMotorController::Stop()
 
 void StepperMotorController::StopFast()
 {
-    Debug.Log("[%i].StopFast", _motor->ID());
+    Debug.Log(this) << __func__ << "[" << _motor->ID() << "]" << endl;
     Speed(0);
     TargetSpeed(0);
     _isRunningToPosition = false;
@@ -69,7 +71,7 @@ void StepperMotorController::StopFast()
 
 void StepperMotorController::RunToPosition(long targetPosition)
 {
-    Debug.Log("[%i].%s(%l)", _motor->ID(), __func__, targetPosition);
+    Debug.Log(this) << __func__ << "[" << _motor->ID() << "]: targetPosition=" << targetPosition << endl;
     TargetPosition(targetPosition);
     _isRunningToPosition = true;
 }
@@ -92,14 +94,14 @@ boolean StepperMotorController::Run()
     {
         if (OneStep()) ComputeNewSpeed();
     }
-    
+
     return _currentSpeed != 0.0;
 }
 
 
 /******************************************************************************
  Runs the motor, at most one step, using acceleration until the target position is reached.
- You must call this method continually to keep the motor moving, preferably 
+ You must call this method continually to keep the motor moving, preferably
  in your main loop.
  If the motor is at the desired position this will not step the motor and the cost
  is very small.
@@ -107,8 +109,11 @@ boolean StepperMotorController::Run()
 ******************************************************************************/
 void StepperMotorController::RunToTargetPosition()
 {
-    Debug.Log("[%i].RunToTargetPosition => _currentPos=%l, _targetPos=%l, _currentSpeed=%f", _motor->ID(), _currentPos, _targetPos, _currentSpeed);
-        
+    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: _currentPos=") << _currentPos
+                                                       << F(", _targetPos=") << _targetPos
+                                                       << F(", _currentSpeed=") << _currentSpeed
+                                                       << endl;
+
     if (OneStep())
     {
         if (_targetPos == _currentPos)
@@ -127,11 +132,11 @@ void StepperMotorController::RunToTargetPosition()
                     TargetSpeed(0.0);
                 }
             }
-            
+
             ComputeNewSpeed();
         }
-            
-        _isRunningToPosition = (_currentSpeed != 0.0); 
+
+        _isRunningToPosition = (_currentSpeed != 0.0);
     }
 }
 
@@ -154,10 +159,10 @@ bool StepperMotorController::OneStep()
     if ((time - _lastStepTime) < _currentStepSize) return false;
 
     // Otherwise, we are going to step the motor
-    Debug.Log("[%i].OneStep => Stepping Motor", _motor->ID());
-    
+    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: Stepping Motor") << endl;
+
     int direction = Direction();
-    
+
     // Update step position, +1 for FORWARD, -1 for BACKWARD; And last step time
     _currentPos += direction;
     _lastStepTime = time;
@@ -189,16 +194,18 @@ bool StepperMotorController::OneStep()
 ******************************************************************************/
 void StepperMotorController::ComputeNewSpeed()
 {
-    Debug.Log("[%i].ComputeNewSpeed enter: _currentSpeed=%f, _targetSpeed=%f", _motor->ID(), _currentSpeed, _targetSpeed);
+    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: _currentSpeed=") << _currentSpeed
+                                                       << F(", _targetSpeed=") << _targetSpeed
+                                                       << endl;
 
     // Early exit if there is no need to accelerate
-    if (_acceleration == 0.0 || _currentSpeed == _targetSpeed) return; 
+    if (_acceleration == 0.0 || _currentSpeed == _targetSpeed) return;
 
     // If the target speed is 0 and we are at the 0-point on acceleration curve (step 0)
     // then we should stop
     if (_targetSpeed == 0 && _accelStep == 0)
     {
-        Debug.Log("[%i].ComputeNewSpeed => stopping at speed 0", _motor->ID());
+        Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: stopping at speed 0") << endl;
         _currentStepSize = fabs(_targetStepSize);
         _currentSpeed = _targetSpeed;
         _motor->Release();
@@ -221,7 +228,7 @@ void StepperMotorController::ComputeNewSpeed()
         if ((direction >= 0 && newSpeed > _targetSpeed) || (direction < 0 && newSpeed < _targetSpeed))
         {
             // If we overshot the target speed then adjust to target speed
-            Debug.Log("[%i].ComputeNewSpeed => overshot target speed of %f", _motor->ID(), _targetSpeed);
+            Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: _targetSpeed=") << _targetSpeed << endl;
             _currentStepSize = fabs(_targetStepSize);
             _currentSpeed = _targetSpeed;
         }
@@ -234,7 +241,10 @@ void StepperMotorController::ComputeNewSpeed()
         }
     }
 
-    Debug.Log("[%i].ComputeNewSpeed  exit: _currentStepSize=%l, _currentSpeed=%f, direction=%i", _motor->ID(), _currentStepSize, _currentSpeed, Direction());
+    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("] exit: _currentStepSize=") << _currentStepSize
+                                                       << F(", _currentSpeed=") << _currentSpeed
+                                                       << F(", Direction=") << Direction()
+                                                       << endl;
 }
 
 
@@ -289,7 +299,7 @@ void StepperMotorController::TargetSpeed(float value)
 
     // Compute the next step size
     ComputeNewSpeed();
-    _lastStepTime = 0; // Forces a step on next call to Run(). 
+    _lastStepTime = 0; // Forces a step on next call to Run().
 }
 
 
