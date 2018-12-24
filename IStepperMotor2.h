@@ -10,15 +10,14 @@
 
 
 //******************************************************************************
-/// A class that defines the abstract interface for a stepper motor. It defines
-/// the basic operations that a stepper motor needs to perform to be controlled
-/// by the StepperMotorController class.
+/// The abstract interface for a stepper motor. Defines the basic operations that
+/// a stepper motor needs to perform to be controlled by the StepperMotorController
+/// class.
 //******************************************************************************
 class IStepperMotor2 
 {
     /// The constructor is protected to enforce abstract base class semantics.
     protected: IStepperMotor2(void) { };
-
     
     //**************************************************************************
     /// Stepper motor modes
@@ -33,6 +32,9 @@ class IStepperMotor2
 
     //**************************************************************************
     /// Motor direction
+	/// NOTE: Directions are aribtrary, i.e., FORWARD just means one direction 
+    /// and BACKWARD means the opposite direction. The actual direction the motor
+    /// turns depends on how the motor is wired up to the Arduino. 
     //**************************************************************************
     public: enum MotorDirection
     {
@@ -40,7 +42,6 @@ class IStepperMotor2
         STOPPED  =  0,
         BACKWARD = -1
     };
-
     
     /*--------------------------------------------------------------------------
     Methods

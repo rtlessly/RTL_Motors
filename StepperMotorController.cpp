@@ -62,7 +62,7 @@ void StepperMotorController::Stop()
 
 void StepperMotorController::StopFast()
 {
-    Debug.Log(this) << __func__ << "[" << _motor->ID() << "]" << endl;
+    Debug.Log(this) << __func__ << '[' << _motor->ID() << ']' << endl;
     Speed(0);
     TargetSpeed(0);
     _isRunningToPosition = false;
@@ -71,7 +71,7 @@ void StepperMotorController::StopFast()
 
 void StepperMotorController::RunToPosition(long targetPosition)
 {
-    Debug.Log(this) << __func__ << "[" << _motor->ID() << "]: targetPosition=" << targetPosition << endl;
+    Debug.Log(this) << __func__ << '[' << _motor->ID() << F("]: targetPosition=") << targetPosition << endl;
     TargetPosition(targetPosition);
     _isRunningToPosition = true;
 }
@@ -109,7 +109,7 @@ boolean StepperMotorController::Run()
 ******************************************************************************/
 void StepperMotorController::RunToTargetPosition()
 {
-    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: _currentPos=") << _currentPos
+    Debug.Log(this) << __func__ << '[' << _motor->ID() << F("]: _currentPos=") << _currentPos
                                                        << F(", _targetPos=") << _targetPos
                                                        << F(", _currentSpeed=") << _currentSpeed
                                                        << endl;
@@ -159,7 +159,7 @@ bool StepperMotorController::OneStep()
     if ((time - _lastStepTime) < _currentStepSize) return false;
 
     // Otherwise, we are going to step the motor
-    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: Stepping Motor") << endl;
+    Debug.Log(this) << __func__ << '[' << _motor->ID() << F("]: Stepping Motor") << endl;
 
     int direction = Direction();
 
@@ -194,7 +194,7 @@ bool StepperMotorController::OneStep()
 ******************************************************************************/
 void StepperMotorController::ComputeNewSpeed()
 {
-    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: _currentSpeed=") << _currentSpeed
+    Debug.Log(this) << __func__ << '[' << _motor->ID() << F("]: _currentSpeed=") << _currentSpeed
                                                        << F(", _targetSpeed=") << _targetSpeed
                                                        << endl;
 
@@ -205,7 +205,7 @@ void StepperMotorController::ComputeNewSpeed()
     // then we should stop
     if (_targetSpeed == 0 && _accelStep == 0)
     {
-        Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: stopping at speed 0") << endl;
+        Debug.Log(this) << __func__ << '[' << _motor->ID() << F("]: stopping at speed 0") << endl;
         _currentStepSize = fabs(_targetStepSize);
         _currentSpeed = _targetSpeed;
         _motor->Release();
@@ -228,7 +228,7 @@ void StepperMotorController::ComputeNewSpeed()
         if ((direction >= 0 && newSpeed > _targetSpeed) || (direction < 0 && newSpeed < _targetSpeed))
         {
             // If we overshot the target speed then adjust to target speed
-            Debug.Log(this) << __func__ << "[" << _motor->ID() << F("]: _targetSpeed=") << _targetSpeed << endl;
+            Debug.Log(this) << __func__ << '[' << _motor->ID() << F("]: _targetSpeed=") << _targetSpeed << endl;
             _currentStepSize = fabs(_targetStepSize);
             _currentSpeed = _targetSpeed;
         }
@@ -241,7 +241,7 @@ void StepperMotorController::ComputeNewSpeed()
         }
     }
 
-    Debug.Log(this) << __func__ << "[" << _motor->ID() << F("] exit: _currentStepSize=") << _currentStepSize
+    Debug.Log(this) << __func__ << '[' << _motor->ID() << F("] exit: _currentStepSize=") << _currentStepSize
                                                        << F(", _currentSpeed=") << _currentSpeed
                                                        << F(", Direction=") << Direction()
                                                        << endl;

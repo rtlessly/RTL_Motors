@@ -19,6 +19,9 @@ class IMotorController2
 {
     //**************************************************************************
     /// Motor direction
+	/// NOTE: Directions are aribtrary, i.e., FORWARD just means one direction 
+    /// and BACKWARD means the opposite direction. The actual direction the motor
+    /// turns depends on how the motor is wired up to the Arduino. 
     //**************************************************************************
     public: enum MotorDirection
     {
@@ -156,12 +159,11 @@ class IMotorController2
     public: virtual void SetSpeed(int16_t value) = 0;
 
     //**************************************************************************
-    /// Gets the motor set speed. Positive speeds are FORWARD, negative
-    /// speeds are BACKWARD. The "set speed" is the speed value that was set by 
-    /// the SetSpeed() method. Unlike the value returned by the ActualSpeed() 
-    /// method, the set speed is not affected by the variations in the actual 
-    /// motor speed. So it remains constant until explicitly changed by a method 
-    /// call.
+    /// Gets the motor set speed. Positive speeds are FORWARD, negative speeds
+    /// are BACKWARD. The "set speed" is the speed value that was set by the 
+	/// SetSpeed() method. Unlike the value returned by the ActualSpeed() method, 
+	/// the set speed is not affected by the variations in the actual motor speed. 
+	/// So it remains constant until explicitly changed by a method call.
     ///
     /// \return The motor set speed.
     //**************************************************************************

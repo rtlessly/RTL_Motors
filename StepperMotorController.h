@@ -49,7 +49,7 @@
 /// per second at a clock frequency of 16 MHz on Arduino such as Uno etc. Faster
 /// processors can support faster stepping speeds. However, any speed less than
 /// that, down to very slow speeds (much less than one per second), are also
-///  supported, provided the run() function is called frequently enough to step
+/// supported, provided the run() function is called frequently enough to step
 /// the motor whenever required for the speed set. Calling Acceleration() is
 /// expensive, since it requires a square root to be calculated.
 ///
