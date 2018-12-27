@@ -23,10 +23,6 @@
 DEFINE_CLASSNAME(StepperMotor);
 
 
-/*******************************************************************************
-    STEPPER MOTORS
-*******************************************************************************/
-
 StepperMotor::StepperMotor(uint16_t stepsPerRev, uint8_t pinA1, uint8_t pinA2, uint8_t pinB1, uint8_t pinB2) 
 {
     _stepsPerRev = stepsPerRev;
@@ -36,14 +32,14 @@ StepperMotor::StepperMotor(uint16_t stepsPerRev, uint8_t pinA1, uint8_t pinA2, u
     _motorState.pinB2 = pinB2;
 
     _currentStep = 0;
-	_lastStepTime = 0;
-	_stepCount = 0;
-	_isRunning = false;
-	
-	pinMode(pinA1, OUTPUT);
-	pinMode(pinA2, OUTPUT);
-	pinMode(pinB1, OUTPUT);
-	pinMode(pinB2, OUTPUT);
+    _lastStepTime = 0;
+    _stepCount = 0;
+    _isRunning = false;
+    
+    pinMode(pinA1, OUTPUT);
+    pinMode(pinA2, OUTPUT);
+    pinMode(pinB1, OUTPUT);
+    pinMode(pinB2, OUTPUT);
 
     Release();
 }
@@ -52,32 +48,32 @@ StepperMotor::StepperMotor(uint16_t stepsPerRev, uint8_t pinA1, uint8_t pinA2, u
 void StepperMotor::Poll(void) 
 {
     TRACE(Logger(_classname_) << F("Poll") << endl);
-	
+    
     // Only need to step if we are running and speed is not 0
     if (_isRunning && _usPerStep > 0)
-	{
-		unsigned long time = micros();
+    {
+        unsigned long time = micros();
 
-		// Step motor if step interval has been reached
-		if ((time - _lastStepTime) >= _usPerStep) 
-		{
-			OneStep(Direction());
-			_lastStepTime = time;
+        // Step motor if step interval has been reached
+        if ((time - _lastStepTime) >= _usPerStep) 
+        {
+            OneStep(Direction());
+            _lastStepTime = time;
 
-			// If runnings steps then update step count and
-			// stop if the step count has been reached.
-			if (_stepCount > 0)
-			{
-				if (--_stepCount == 0) Release();
-			}
-		}
-	}
+            // If runnings steps then update step count and
+            // stop if the step count has been reached.
+            if (_stepCount > 0)
+            {
+                if (--_stepCount == 0) Release();
+            }
+        }
+    }
 }
 
 
 void StepperMotor::Release(void) 
 {
-	Stop();
+    Stop();
     digitalWrite(_motorState.pinA1, LOW);
     digitalWrite(_motorState.pinA2, LOW);
     digitalWrite(_motorState.pinB1, LOW);
@@ -201,9 +197,9 @@ void StepperMotor::OneStep(int8_t dir)
 
 void StepperMotor::Speed(int16_t rpm) 
 {
-	_speed = rpm;
+    _speed = rpm;
 
-	auto stepSpeed = abs(_speed) * _stepsPerRev;
+    auto stepSpeed = abs(_speed) * _stepsPerRev;
 
     _usPerStep = (stepSpeed > 0) ? (60000000UL / (uint32_t)stepSpeed) : 0;
 }

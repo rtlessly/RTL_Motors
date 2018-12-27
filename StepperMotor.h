@@ -36,13 +36,13 @@ class StepperMotor : public IPollable
     /// NOTE: Directions are aribtrary, i.e., FORWARD just means one direction 
     ///       and BACKWARD means the opposite direction. The actual direction the 
     ///       motor turns depends on how the motor is wired up to the Arduino. 
-	///
+    ///
     ///       If the motor is running backwards from the desired direction you 
     ///       can either:
     ///       1) Swap FORWARD and BACKWARD directions in your code
     ///       2) Swap the "A" leads and "B" leads on the motor (NOTE: DO NOT swap
     ///          the "A" leads with the "B" leads, just switch A1 with A2 and 
-	///          B1 with B2).
+    ///          B1 with B2).
     //**************************************************************************
     public: enum MotorDirection
     {
