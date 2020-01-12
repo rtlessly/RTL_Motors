@@ -8,7 +8,6 @@
 
 #include <inttypes.h>
 #include <RTL_Stdlib.h>
-#include <IPollable.h>
 
 
 // These defs cause trouble on some versions of Arduino

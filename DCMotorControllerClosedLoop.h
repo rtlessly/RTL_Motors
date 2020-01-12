@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include <RTL_Stdlib.h>
 #include <RTL_Math.h>
-#include <RTL_EventFramework.h>
+#include <EventSource.h>
 #include <RotationSensor.h>
 
 #include "IDCMotor.h"
@@ -27,7 +27,7 @@
 //******************************************************************************
 class DCMotorControllerClosedLoop : public IMotorController2, public EventSource
 {
-	DECLARE_CLASSNAME;
+    DECLARE_CLASSNAME;
 
     public: static const EVENT_ID DEBUG_EVENT = (EventSourceID::DCMotorController | EventCode::DebugInfo);
     
@@ -145,8 +145,8 @@ class DCMotorControllerClosedLoop : public IMotorController2, public EventSource
     /// \return The motor set speed.
     //**************************************************************************
     public: int16_t GetSpeed() { return _targetSpeed; };
-	
-	public: uint32_t GetCount() { return _pRotSensor->ReadCount(); };
+    
+    public: uint32_t GetCount() { return _pRotSensor->ReadCount(); };
     
     public: void SetSpeedNow(int16_t value) { _targetSpeed = value; /*_applyAcceleration = false;*/ };
 

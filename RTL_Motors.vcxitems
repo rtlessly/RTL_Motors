@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{cf57a057-4893-4abf-ad2e-e9599b5003e1}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)DCMotorController.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)DCMotorControllerClosedLoop.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)MovementController.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)MovementController2D.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)StepperMotor.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)StepperMotorController.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)DCMotorController.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)DCMotorControllerClosedLoop.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IDCMotor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IDCMotor2.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IMotorController.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IMotorController2.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IStepperMotor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)IStepperMotor2.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)MovementController.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)MovementController2D.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)StepperMotor.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)StepperMotorController.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="$(MSBuildThisFileDirectory)keywords.txt" />
+    <Text Include="$(MSBuildThisFileDirectory)vs-readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory).gitattributes" />
+    <None Include="$(MSBuildThisFileDirectory).gitignore" />
+    <None Include="$(MSBuildThisFileDirectory)README.md" />
+  </ItemGroup>
+</Project>

@@ -19,7 +19,6 @@ DEFINE_CLASSNAME(DCMotorControllerClosedLoop);
 
 DCMotorControllerClosedLoop::DCMotorControllerClosedLoop(IDCMotor& motor, RotationSensor& rotSensor)
 {
-    _id = "DCMotorControllerClosedLoop";
     _pMotor = &motor;
     _pRotSensor = &rotSensor;
 
@@ -112,7 +111,7 @@ bool DCMotorControllerClosedLoop::Run()
 
     //_applyAcceleration = IsAtSpeed();
     TRACE(Logger(_classname_, __func__, this) << '[' << _pMotor->ID() << F("] _targetSpeed=") << _targetSpeed 
-	                                          << F(", _throttle=") << _throttle << F(", outThrottle=") << outThrottle << endl);
+                                              << F(", _throttle=") << _throttle << F(", outThrottle=") << outThrottle << endl);
 
 #if DEBUG_FEEDBACK
     // DebugControlData debugData;
@@ -181,9 +180,9 @@ bool DCMotorControllerClosedLoop::IsAtSpeed()
 bool DCMotorControllerClosedLoop::IsRunning() 
 {
     //Logger(_classname_, __func__, this) << '[' << _pMotor->ID() << F("] _currentSpeed=") << _currentSpeed << endl;
-	
-	return (_currentSpeed != 0.0 && _targetSpeed != 0.0); 
-	//return (_targetSpeed != 0.0); 
+    
+    return (_currentSpeed != 0.0 && _targetSpeed != 0.0); 
+    //return (_targetSpeed != 0.0); 
 }
 
 
@@ -212,7 +211,7 @@ void DCMotorControllerClosedLoop::SetThrottle(const int16_t value)
     auto direction = SIGN(_throttle);
 
     TRACE(Logger(_classname_, __func__, this) << '[' << _pMotor->ID() << F("] _throttle=") << _throttle 
-	                                          << F("] direction=") << (int)direction  << endl);
+                                              << F("] direction=") << (int)direction  << endl);
 
     _pMotor->Speed(abs(_throttle));
     _pMotor->Run((direction > 0) ? DCMotorMode::FORWARD  :

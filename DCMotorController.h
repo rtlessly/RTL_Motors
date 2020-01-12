@@ -4,10 +4,10 @@
 #include <inttypes.h>
 #include <RTL_Stdlib.h>
 #include <RTL_Math.h>
-#include <RTL_EventFramework.h>
-#include <RotationSensor.h>
+#include <EventSource.h>
 #include "IDCMotor.h"
 #include "IMotorController.h"
+#include <RotationSensor.h>
 
 
 //******************************************************************************

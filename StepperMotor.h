@@ -2,8 +2,7 @@
 #define _StepperMotor_h_
 
 #include <inttypes.h>
-#include <RTL_EventFramework.h>
-// #include "IStepperMotor.h"
+#include <TaskBase.h>
 
 
 //******************************************************************************
@@ -16,7 +15,7 @@
 ///  
 ///  Written by R. Terry Lessly 2018-12-03.
 //******************************************************************************
-class StepperMotor : public IPollable
+class StepperMotor : public TaskBase
 {
     DECLARE_CLASSNAME;
 

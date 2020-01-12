@@ -23,7 +23,6 @@ DEFINE_CLASSNAME(MovementController2D);
 MovementController2D::MovementController2D(IMotorController2& leftController, IMotorController2& rightController)
 : _leftMotor(leftController), _rightMotor(rightController)
 {
-	_id = "MovementController2D";
     _trackWidth = 0; 
     _wheelDiameter = 0; 
     _wheelCircumference = 0;

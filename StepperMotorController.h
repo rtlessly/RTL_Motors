@@ -7,7 +7,7 @@
 #define StepperMotorController_h
 
 #include <inttypes.h>
-#include <IPollable.h>
+#include <TaskBase.h>
 #include "IStepperMotor.h"
 #include "IMotorController.h"
 
@@ -56,7 +56,7 @@
 /// Gregor Christandl reports that with an Arduino Due and a simple test program,
 /// he measured 43163 steps per second using runStep(),
 /// and 16214 steps per second using run();
-class StepperMotorController : public IPollable
+class StepperMotorController : public TaskBase
 {
     //**************************************************************************
     /// Motor direction

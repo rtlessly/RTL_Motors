@@ -8,7 +8,6 @@
 
 #include <inttypes.h>
 #include <RTL_Stdlib.h>
-#include <IPollable.h>
 
 
 // These defs cause trouble on some versions of Arduino
@@ -19,7 +18,7 @@ class IMotorController2
 {
     //**************************************************************************
     /// Motor direction
-	/// NOTE: Directions are aribtrary, i.e., FORWARD just means one direction 
+    /// NOTE: Directions are aribtrary, i.e., FORWARD just means one direction 
     /// and BACKWARD means the opposite direction. The actual direction the motor
     /// turns depends on how the motor is wired up to the Arduino. 
     //**************************************************************************
@@ -109,8 +108,8 @@ class IMotorController2
 
     //**************************************************************************
     /// Returns the current step count. For stepper motors this is simply the 
-	/// number of steps the motor has turned. For DC motors with a rotation sensor
-	/// it is the number rotation sensor steps. Otherwise, this property is undefined.
+    /// number of steps the motor has turned. For DC motors with a rotation sensor
+    /// it is the number rotation sensor steps. Otherwise, this property is undefined.
     //**************************************************************************
     public: virtual uint32_t GetCount() { return 0; };
 
@@ -161,9 +160,9 @@ class IMotorController2
     //**************************************************************************
     /// Gets the motor set speed. Positive speeds are FORWARD, negative speeds
     /// are BACKWARD. The "set speed" is the speed value that was set by the 
-	/// SetSpeed() method. Unlike the value returned by the ActualSpeed() method, 
-	/// the set speed is not affected by the variations in the actual motor speed. 
-	/// So it remains constant until explicitly changed by a method call.
+    /// SetSpeed() method. Unlike the value returned by the ActualSpeed() method, 
+    /// the set speed is not affected by the variations in the actual motor speed. 
+    /// So it remains constant until explicitly changed by a method call.
     ///
     /// \return The motor set speed.
     //**************************************************************************
@@ -194,15 +193,15 @@ class IMotorController2
     ///                     default is 800ms.
     ///
     /// Braking helps the motor to stop spinning faster. It typically only applies 
-	/// to DC motors since a DC motor controller can often be configured to short 
-	/// the motor windings together, inducing a magnetic field in the motor that 
-	/// opposes the motor's rotation.
-	///
-	/// However, holding the brake too long can cause excessive current draw by 
-	/// the motor, so the braking function is designed to automatically release 
-	/// the brake after a predetermined interval, as specified by the holdTime 
-	/// parameter. Since the holdTime parameter is a 16-bit unsigned value, the 
-	/// longest hold time is about 65 seconds.
+    /// to DC motors since a DC motor controller can often be configured to short 
+    /// the motor windings together, inducing a magnetic field in the motor that 
+    /// opposes the motor's rotation.
+    ///
+    /// However, holding the brake too long can cause excessive current draw by 
+    /// the motor, so the braking function is designed to automatically release 
+    /// the brake after a predetermined interval, as specified by the holdTime 
+    /// parameter. Since the holdTime parameter is a 16-bit unsigned value, the 
+    /// longest hold time is about 65 seconds.
     ///
     /// If the motor does not support a braking function then this method should 
     /// be implemented to do nothing.
